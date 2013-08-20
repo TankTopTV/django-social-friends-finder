@@ -1,7 +1,7 @@
 from social_friends_finder.backends import BaseFriendsProvider
 from social_friends_finder.utils import setting
 if setting("SOCIAL_FRIENDS_USING_ALLAUTH", False):
-    from allauth.socialaccount.models import SocialToken, SocialAccount, SocialApp
+    from allauth.socialaccount.models import SocialToken, SocialApp
     USING_ALLAUTH = True
 else:
     from social_auth.backends.twitter import TwitterBackend
@@ -25,7 +25,7 @@ class TwitterFriendsProvider(BaseFriendsProvider):
         # Fetch the token key and secret
         if USING_ALLAUTH:
             social_app = SocialApp.objects.get_current('twitter')
-            consumer_key = social_app.key
+            consumer_key = social_app.client_id
             consumer_secret = social_app.secret
 
             oauth_token = SocialToken.objects.get(account=user, app=social_app).token
