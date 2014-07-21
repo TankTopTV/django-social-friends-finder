@@ -1,7 +1,10 @@
 from django.views.generic import TemplateView
 from django.http import HttpResponseRedirect
-from models import SocialFriendList
+from models import SocialFriendList, UserSocialFollow
 from utils import setting
+from django.contrib.auth.decorators import login_required
+from django.template import RequestContext
+from django.shortcuts import render_to_response
 
 if setting("SOCIAL_FRIENDS_USING_ALLAUTH", False):
     USING_ALLAUTH = True
@@ -66,3 +69,14 @@ class FriendListView(TemplateView):
         context['connected_providers'] = connected_providers
 
         return context
+
+
+@login_required
+def user_social_follows(request):
+    data = {
+        'friends': UserSocialFollow.objects.filter(user=request.user),
+        'connected_providers': request.user.socialaccount_set.all()
+    }
+    # TODO!! Instead of connected providers, show a list of providers that we have failed to set up with
+    # Store these when we attempt access after login (in the celery tasks)
+    return render_to_response('social_friends_finder/user_social_follows.html', data, context_instance=RequestContext(request))

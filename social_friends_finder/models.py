@@ -3,7 +3,8 @@ from utils import setting
 
 if setting("SOCIAL_FRIENDS_USING_ALLAUTH", False):
     USING_ALLAUTH = True
-    from allauth.socialaccount.models import SocialAccount as UserSocialAuth    
+    from allauth.socialaccount.models import SocialAccount as UserSocialAuth
+    from allauth.socialaccount.models import SocialAccount
 else:
     USING_ALLAUTH = False
     from social_auth.models import UserSocialAuth
@@ -112,3 +113,77 @@ class SocialFriendList(models.Model):
 
     def existing_social_friends(self):
         return SocialFriendList.objects.existing_social_friends(self.user_social_auth, self.friend_ids)
+
+class SocialFollow(models.Model):
+    # User A follows / is interested in user B on social network
+    # This is unidirectional to allow for networks like Twitter, where B might not give a monkeys about A
+    # So where relationships are two-way friendships (like Facebook) there need to be two entries in this table
+    social_user = models.ForeignKey(SocialAccount, related_name="social_followers")
+    follows = models.ForeignKey(SocialAccount, related_name="social_followees")
+
+    # A pair of users could have multiple relationships on different social networks.
+    # But there should only be one of these between any pair of IDs because they refer to SocialAccount.
+    class Meta:
+        unique_together = ('social_user', 'follows')
+
+    @classmethod
+    def new_follow(cls, social_user, social_follows):
+        # Return False if we already know that this user follows the other on any social network
+
+        # These social accounts had better be on the same social network
+        assert(social_user.provider == social_follows.provider)
+        provider = social_user.provider
+
+        try:
+            sf = cls.objects.get(social_user=social_user, follows=social_follows)
+            return False
+        except SocialFollow.DoesNotExist:
+            pass
+
+        sf = SocialFollow()
+        sf.social_user = social_user
+        sf.follows = social_follows
+        sf.save()
+
+        # For Facebook, a relationship is always two-way (if I am friends with you, you're friends with me too)
+        # TODO!! Should have a more generic way of saying whether a follow relationship is symmetrical
+        if provider == "facebook":
+            sf2 = SocialFollow()
+            sf2.social_user = social_follows
+            sf2.follows = social_user
+            sf2.save()
+
+        # Now check to see if this relationship already exists at a user level.  (There might be a previously-existing
+        # follow based on knowing each other through another social network)
+        try:
+            usf = UserSocialFollow.objects.get(user=social_user.user, follows=social_follows.user)
+            return False
+
+        except UserSocialFollow.DoesNotExist:
+            usf = UserSocialFollow()
+            usf.user = social_user.user
+            usf.follows = social_follows.user
+            usf.save()
+
+            if service == "facebook":
+                usf2 = UserSocialFollow()
+                usf2.user = social_follows.user
+                usf2.follows = social_user.user
+                usf2.save()
+
+            return True # It's a new following relationship
+
+
+class UserSocialFollow(models.Model):
+    # User A follows / is interested in user B because of a relationship on a social network
+    # Again this is unidirectional
+    user = models.ForeignKey(User, related_name="followers")
+    follows = models.ForeignKey(User, related_name="followees")
+
+    class Meta:
+        unique_together = ('user', 'follows')
+
+
+
+
+
