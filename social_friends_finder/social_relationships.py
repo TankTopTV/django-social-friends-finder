@@ -54,15 +54,16 @@ def new_facebook_relationships(social_user):
     if 'data' not in friends:
         return
 
-    for friend in friends['data']:
-        # Putting in a try just in case the data format changes or something
-        try:
-            social_friend = SocialAccount.objects.get(provider='facebook', uid=friend['id'])
-            if social_friend and SocialFollow.new_follow(social_user, social_friend):
+    # Putting in a try just in case the data format changes or something
+    try:
+        friend_ids = tuple(friend['id'] for friend in friends['data'])
+
+        for social_friend in SocialAccount.objects.filter(provider='facebook', uid__in=friend_ids):
+            if SocialFollow.new_follow(social_user, social_friend):
                 # TODO! Ideally this would trigger a signal so that we can tell the user that they have new friends using this service
                 continue
-        except:
-            continue
+    except:
+        pass
 
 
 def new_twitter_relationships(social_user):
