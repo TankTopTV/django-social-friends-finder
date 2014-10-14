@@ -87,14 +87,11 @@ def new_twitter_relationships(social_user):
     # This returns up to 5000 followers.  Arguably we should page through this and get more but this will do to get started.
     friends = api.GetFollowerIDs(user_id=social_user.uid, stringify_ids=True)
 
-    for friend in friends:
-        # Is this follower already on the service
-        try:
-            social_friend = SocialAccount.objects.get(provider='twitter', uid=friend)
-            if social_friend and SocialFollow.new_follow(social_friend, social_user):
-                # TODO! We might want to tell the friend that this user has joined the service, maybe this should trigger a signal
-                continue
-        except:
+    # Are any of these followers already on the service?
+    social_friends = SocialAccount.objects.filter(provider='twitter', uid__in=friends)
+    for social_friend in social_friends:
+        if SocialFollow.new_follow(social_friend, social_user):
+            # TODO! We might want to tell the friend that this user has joined the service, maybe this should trigger a signal
             continue
 
     # We also want to set up relationships in the other direction i.e. people this user follows who are already on
@@ -103,14 +100,11 @@ def new_twitter_relationships(social_user):
 
     friends = api.GetFriendIDs(user_id=social_user.uid, stringify_ids=True)
 
-    for friend in friends:
-        # Is this friend already on the service?
-        try:
-            social_friend = SocialAccount.objects.get(provider='twitter', uid=friend)
-            if social_friend and SocialFollow.new_follow(social_user, social_friend):
-                # TODO! We might want to tell the user that this friend is already on the service, again this could trigger a signal
-                continue
-        except:
+    # Are any of these friends already on the service?
+    social_friends = SocialAccount.objects.filter(provider='twitter', uid__in=friends)
+    for social_friend in social_friends:
+        if social_friend and SocialFollow.new_follow(social_user, social_friend):
+            # TODO! We might want to tell the user that this friend is already on the service, again this could trigger a signal
             continue
 
 
