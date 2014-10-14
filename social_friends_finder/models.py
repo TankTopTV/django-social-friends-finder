@@ -58,7 +58,7 @@ class SocialFriendsManager(models.Manager):
 
         # Match them with the ones on the website
         if USING_ALLAUTH:
-            return User.objects.filter(socialaccount__uid__in=friend_ids).all()            
+            return User.objects.filter(socialaccount__uid__in=friend_ids).all()
         else:
             return User.objects.filter(social_auth__uid__in=friend_ids).all()
 
@@ -118,8 +118,8 @@ class SocialFollow(models.Model):
     # User A follows / is interested in user B on social network
     # This is unidirectional to allow for networks like Twitter, where B might not give a monkeys about A
     # So where relationships are two-way friendships (like Facebook) there need to be two entries in this table
-    social_user = models.ForeignKey(SocialAccount, related_name="social_followers")
-    follows = models.ForeignKey(SocialAccount, related_name="social_followees")
+    social_user = models.ForeignKey(SocialAccount, related_name="social_followees")
+    follows = models.ForeignKey(SocialAccount, related_name="social_followers")
 
     # A pair of users could have multiple relationships on different social networks.
     # But there should only be one of these between any pair of IDs because they refer to SocialAccount.
@@ -177,12 +177,14 @@ class SocialFollow(models.Model):
 class UserSocialFollow(models.Model):
     # User A follows / is interested in user B because of a relationship on a social network
     # Again this is unidirectional
-    user = models.ForeignKey(User, related_name="followers")
-    follows = models.ForeignKey(User, related_name="followees")
+    user = models.ForeignKey(User, related_name="followees")
+    follows = models.ForeignKey(User, related_name="followers")
 
     class Meta:
         unique_together = ('user', 'follows')
 
+    def __unicode__(self):
+        return "{0} follows {1}".format(self.user, self.follows)
 
 
 
