@@ -165,7 +165,7 @@ class SocialFollow(models.Model):
             usf.follows = social_follows.user
             usf.save()
 
-            if service == "facebook":
+            if provider == "facebook":
                 usf2 = UserSocialFollow()
                 usf2.user = social_follows.user
                 usf2.follows = social_user.user
