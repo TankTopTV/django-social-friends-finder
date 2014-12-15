@@ -8,6 +8,8 @@ else:
     USING_ALLAUTH = True
 import facebook
 
+import logging
+logger = logging.getLogger(__name__)
 
 class FacebookFriendsProvider(BaseFriendsProvider):
 
@@ -45,10 +47,11 @@ class FacebookFriendsProvider(BaseFriendsProvider):
         """
         try:
             friends = self.fetch_friends(user)
-        except facebook.GraphAPIError:
-            log.debug("Graph API Error")
-            return [] 
-                
+        except facebook.GraphAPIError as e:
+            logger.debug("Graph API Error")
+            logger.debug(e)
+            return []
+
         friend_ids = []
         for friend in friends['data']:
             friend_ids.append(friend['id'])
